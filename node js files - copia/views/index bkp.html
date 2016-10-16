@@ -1,0 +1,175 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+	<link rel="stylesheet" href="css/normalize.css">
+  <link rel="stylesheet" href="css/foundation.min.css">
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+    </style>
+  </head>
+  
+  <body>
+  <h3>Connected users:</h3>
+<ul id="online-userslist"></ul>
+  <a id="btn-login" href="#" data-reveal-id="exampleModal1">Login</a>
+  
+  
+<!-- Modal dialog for login -->
+
+<div class="reveal" id="exampleModal1" data-reveal>
+  <h1>Awesome. I Have It.</h1>
+  <p class="lead">Your couch. It is mine.</p>
+  <p>I'm a cool paragraph that lives inside of an even cooler modal. Wins!</p>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+
+<p><a data-open="exampleModal1">Click me for a modal</a></p>
+
+
+
+
+
+  <ul id="messages"></ul>
+    <form action="">
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+	<script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+	  <script src="js/foundation.min.js"></script>
+	
+<script>
+  var socket = io();
+$('form').submit(function(){
+    socket.emit('chat message', $('#m').val());
+    $('#m').val('');
+    return false;
+  });
+  socket.on('chat message', function(msg){
+    $('#messages').append($('<li>').text(msg));
+  });
+  </script>
+  
+  <script>
+    var user = {};
+    
+    $(document).foundation();
+    $(document).ready(function () {
+	
+      //$('#exampleModal1').foundation('reveal', 'open'); 
+	  var test = new Foundation.Reveal($('#exampleModal1'));
+	test.open();
+	  //('#exampleModal1').foundation('open');
+    });
+    
+    function login() {
+      $.ajax({
+        type: "POST",
+        url: '/login',
+        data: $('#login-form').serialize(),
+        success: function (data) {
+          $('#alerts').empty();
+          if (data.error) {
+            var html = '<div data-alert class="alert-box alert round">'
+                       + data.err.msg + '</div>';
+            $('#alerts').append(html);
+          }
+          else {
+            user = data.user;
+            var socket = new io();
+            configureSocket(socket);
+            $('#btn-login').css('display', 'none');
+            $('#login-modal').foundation('reveal', 'close');
+          }
+        },
+        dataType: 'json'
+      });
+    }
+    
+    function configureSocket(socket) {
+      
+      /**
+       * Cuando el servidor envia la lista de usuarios conectados.
+       * se reciben a través de este evento,
+       * cada usuario se agrega a la lista de usuarios online
+       * @param  {[type]} users Array con usuarios conectados en el momento
+       */
+      socket.on('all online users', function (users) {
+        console.log(users.length + ' users received');
+        for (var i=0; i<users.length; i++) 
+        {
+          var htmluser = '<li id="' + users[i]._id + '">' + users[i]._id + '</li>';
+          $('#online-userslist').append(htmluser);
+        }
+      });
+      
+      /**
+       * Listener para el evento 'chat message'
+       *   Notese que es el mismo evento que se envia 
+       *   desde el servidor.
+       * Agregamos el mensage entrante a la lista.
+       */
+      socket.on('chat message', function (msg) {
+        $('#list-msgs').append( $('<li>').text(msg) );
+      });
+      
+      /**
+       * Listener para evento 'new user', el servidor lo emite
+       * cuando un usuario se ha conectado
+       * @param  {[json]} nuser el usuario recien conectado
+       */
+      socket.on('new user', function (nuser) {
+        var linuser = '<li id="' + nuser._id + '">'+ nuser._id + '</li>';
+        $('#online-userslist').append(linuser);
+      });
+      
+      /**
+       * Cada vez que un usuario se desconecta, debemos eliminarlo
+       * de la lista de usuarios conectados, el servidor envia un mensaje
+       * con este evento para informarnos sobre un usuario desconectado.
+       * @param  {[json]} nuser El usuarios que se acaba de desconectar
+       */
+      socket.on('remove user', function (nuser) {
+        $('#' + nuser._id).remove();
+      })
+      
+      /**
+       * Emitimos un evento de tipo 'chat message' cada vez
+       * que se presiona 'Enter' en el textarea y enviamos
+       * su contenido como mensaje al servidor.
+       */
+      $('#new-msg').keyup(function (evt) {
+        if (evt.keyCode === 13) {
+          socket.emit('chat message', $('#new-msg').val());
+          $('#new-msg').val('');
+        }
+      });
+      
+      /**
+       * Solicitamos al servidor la lista de usuarios conectados
+       * en este momento.
+       */
+      socket.emit('all online users');
+      
+      /**
+       * Emitimos el evento 'new user' para que el servidor
+       * informe a todos los usuarios que estamos en linea.
+       */
+      socket.emit('new user', user);
+      
+    }
+    
+  </script>
+  
+  
+  </body>
+</html>

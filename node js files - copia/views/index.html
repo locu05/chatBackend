@@ -1,0 +1,196 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+	<link rel="stylesheet" href="css/normalize.css">
+  <link rel="stylesheet" href="css/foundation.min.css">
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 45%; }
+      form#chat { width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+    </style>
+  </head>
+  
+  <body>
+  <h3>Connected users:</h3>
+<ul id="online-userslist"></ul>
+  <a id="btn-login" href="#" data-reveal-id="login-modal">Login</a>
+  
+  
+<!-- Modal dialog for login -->
+
+<div id="login-modal" class="reveal" data-reveal>
+ <!--<h2>Login</h2> -->
+	<div id="alerts"></div>
+    <form id="login-form">
+      <label for="username">Username:</label>
+      <input name="username" type="text" placeholder="Username" required >
+      
+      <br><label>Password:</label>
+      <input name="password" type="password" placeholder="Password" required >
+      <br><label>Grupo Autocodes:</label>
+      <input name="autocodesGrupo" type="text" placeholder="GrupoAutocodes" required >
+      <button onclick="login()" type="button">Login</button>
+      <br><span>Or <a href='/signup'>signup</a> if you dont have an account</span>
+	</form>
+	 <button class="close-button" data-close aria-label="Close modal" type="button">
+		<span aria-hidden="true">&times;</span>
+	 </button>
+</div>
+
+<!-- <p><a data-open="login-modal">Click me for a modal</a></p>  -->
+
+
+
+
+
+  <ul id="messages"></ul>
+    <form id="chat" action="" >
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+	<!-- <script src="http://code.jquery.com/jquery-1.11.1.js"></script>  -->
+	 <script src="http://code.jquery.com/jquery-latest.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+	  <script src="js/foundation.min.js"></script>
+	
+<script>
+  var socket = io();
+$('form').submit(function(){
+console.log('se envia mensaje desde: '+ user._id);
+console.log('se envia mensaje desde: '+ user.grupoAutoc);
+/*envio en propio string el emisor del mensaje*/
+    socket.emit('chat message', $('#m').val(), user.grupoAutoc, user._id);
+    $('#m').val('');
+    return false;
+  });
+ /*  esta funcionaba aunque este afuera de la funcion configuresocket, pero una vez que utilice rooms no funciono mas
+ socket.on('chat message', function(msg){
+  //var nombreUsuario = msg.split(' ')[0];
+  var index = msg.indexOf(" ");
+  var nombreUsuario = msg.substr(0, index);
+  var textoMsj = msg.substr(index + 1);
+      $('#messages').append($('<li>').text(nombreUsuario));
+	  $('#messages').append($('<li>').text('  ' + textoMsj));
+  });
+  */
+  </script>
+  
+  <script>
+    var user = {};
+    
+    $(document).foundation();
+    $(document).ready(function () {
+	
+      //$('#login-modal').foundation('reveal', 'open'); 
+	var popup = new Foundation.Reveal($('#login-modal'));
+	popup.open();
+	// $('#login-modal').foundation('open');
+	  //('#login-modal').foundation('open');
+    });
+    
+    function login() {
+      $.ajax({
+        type: "POST",
+        url: '/login',
+        data: $('#login-form').serialize(),
+        success: function (data) {
+          $('#alerts').empty();
+          if (data.error) {
+            var html = '<div data-alert class="alert-box alert round">'
+                       + data.err.msg + '</div>';
+            $('#alerts').append(html);
+          }
+          else {
+            user = data.user;
+            var socket = new io();
+            configureSocket(socket);
+            $('#btn-login').css('display', 'none');
+            $('#login-modal').foundation('reveal', 'close');
+			//$('.close-button').foundation('close');
+			
+			
+          }
+        },
+        dataType: 'json'
+      });
+    }
+    
+    function configureSocket(socket) {
+      
+      /**
+       * Cuando el servidor envia la lista de usuarios conectados.
+       * se reciben a través de este evento,
+       * cada usuario se agrega a la lista de usuarios online
+       * @param  {[type]} users Array con usuarios conectados en el momento
+       */
+      socket.on('all online users', function (users) {
+        console.log(users.length + ' users received');
+        for (var i=0; i<users.length; i++) 
+        {
+          var htmluser = '<li id="' + users[i]._id + '">' + users[i]._id + '</li>';
+          $('#online-userslist').append(htmluser);
+        }
+      });
+      
+      /**
+       * Listener para el evento 'chat message'
+       *   Notese que es el mismo evento que se envia 
+       *   desde el servidor.
+       * Agregamos el mensage entrante a la lista.
+       */
+      socket.on('chat message', function (obje) {
+	  console.log("recibi mensaje , de:"+ obje.username + " " + obje.message);
+	    var nombreUsuario = obje.username;
+		var textoMsj = obje.message;
+        $('#messages').append($('<li>').text(nombreUsuario));
+	    $('#messages').append($('<li>').text('  ' + textoMsj));
+      });
+      
+      /**
+       * Listener para evento 'new user', el servidor lo emite
+       * cuando un usuario se ha conectado
+       * @param  {[json]} nuser el usuario recien conectado
+       */
+      socket.on('new user', function (nuser) {
+        var linuser = '<li id="' + nuser._id + '">'+ nuser._id + '</li>';
+        $('#online-userslist').append(linuser);
+      });
+      
+      /**
+       * Cada vez que un usuario se desconecta, debemos eliminarlo
+       * de la lista de usuarios conectados, el servidor envia un mensaje
+       * con este evento para informarnos sobre un usuario desconectado.
+       * @param  {[json]} nuser El usuarios que se acaba de desconectar
+       */
+      socket.on('remove user', function (nuser) {
+	  console.log('pase por aqui');
+        $('#' + nuser._id).remove();
+      })
+      
+      
+      
+      /**
+       * Solicitamos al servidor la lista de usuarios conectados
+       * en este momento.
+       */
+      socket.emit('all online users');
+      
+      /**
+       * Emitimos el evento 'new user' para que el servidor
+       * informe a todos los usuarios que estamos en linea.
+       */
+      socket.emit('new user', user);
+      
+    }
+    
+  </script>
+  
+  
+  </body>
+</html>
