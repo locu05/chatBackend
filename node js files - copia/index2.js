@@ -9,24 +9,34 @@ var userDAO     = require('./dao/UserDAO').UserDAO;
 app.use(bodyParser.urlencoded({ extended: true }));
 
 /* Mongodb config */
+/*
 var mdbconf = {
   host: 'localhost',
   port: '27017',
   db: 'chatSS'
 };
-
+*/
 /* Get a mongodb connection and start application */
+/*
 MongoClient.connect('mongodb://'+mdbconf.host+':'+mdbconf.port+'/'+mdbconf.db, function (err, db) {
+*/
+
   console.log('hello world');
 
-  if (err) {
+  /*if (err) {
 console.log('unable to conenecttt :' , err);
 }
+*/
+
+/*
 else {
+	
+	*/
   
-  var usersDAO = new userDAO(db); // Initialize userDAO
+/*  var usersDAO = new userDAO(db); // Initialize userDAO
   var onlineUsers = [];
 
+  */
 
 /** *** *** ***
  *  Configuramos el sistema de ruteo para las peticiones web:
@@ -176,7 +186,10 @@ http.listen(3000, function(){
 });
 
 
-}
 
+/*}
+*/
+
+/*
 });
-
+*/
