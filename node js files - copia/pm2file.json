@@ -1,0 +1,16 @@
+{
+    "name"        : "Autocodes chat server",
+    "script"      : "index2.js",
+    "args"        : [""],
+    "watch"       : true,
+    "node_args"   : "--harmony",
+    "env": {
+        "NODE_ENV": "production",
+    },
+    "exec_mode" : "fork",
+    "exec_interpreter" : "node",
+    "autorestart"      : false,
+    "error_file" : "/var/log/chatserver.log",
+    "out_file"   : "/var/log/chatserver.log",
+    "merge_logs" : true,
+}

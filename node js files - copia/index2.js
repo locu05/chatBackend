@@ -37,6 +37,8 @@ else {
   var onlineUsers = [];
 
   */
+  var onlineUsers = [];
+
 
 /** *** *** ***
  *  Configuramos el sistema de ruteo para las peticiones web:
