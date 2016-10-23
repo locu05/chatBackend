@@ -21,7 +21,7 @@ var mdbconf = {
 MongoClient.connect('mongodb://'+mdbconf.host+':'+mdbconf.port+'/'+mdbconf.db, function (err, db) {
 */
 
-  console.log('hello world');
+console.log('Starting chat backend server');
 
   /*if (err) {
 console.log('unable to conenecttt :' , err);
@@ -181,8 +181,8 @@ io.on('connection', function(socket){
 
 
 
-http.listen(3000, function(){
-  console.log('listening on *:3000');
+http.listen(3001, function(){
+  console.log('listening on *:3001');
 });
 
 
